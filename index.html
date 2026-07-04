@@ -353,6 +353,8 @@
   }
   .badge.buy { background: var(--win-dim); color: var(--win); }
   .badge.sell { background: var(--loss-dim); color: var(--loss); }
+  .badge.income { background: var(--win-dim); color: var(--win); }
+  .badge.expense { background: var(--loss-dim); color: var(--loss); }
   .trade-entry-body {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;
     font-size: 0.82rem; margin-bottom: 0.4rem;
@@ -370,6 +372,17 @@
   }
   .trade-result-row button.del { padding: 0.4rem 0.6rem; font-size: 0.78rem; color: var(--loss); }
   .empty-state { text-align: center; color: var(--text-faint); font-size: 0.85rem; padding: 1.5rem 0; }
+
+  /* Keuangan */
+  .select-sm {
+    padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 0.8rem; font-family: inherit; background: var(--surface-2); color: var(--text);
+  }
+  .card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .card-head .section-title { margin: 0; }
 
   /* Weekly eval */
   .eval-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
@@ -489,6 +502,7 @@
   <div class="tabs-row">
     <button class="tab active" data-tab="trading">Trading &amp; Checklist</button>
     <button class="tab" data-tab="riwayat">Riwayat &amp; Evaluasi</button>
+    <button class="tab" data-tab="keuangan">Keuangan</button>
   </div>
 
   <div class="tab-panel" data-panel="trading">
@@ -603,6 +617,114 @@
 
   </div>
 
+  <div class="tab-panel" data-panel="keuangan" style="display:none">
+
+    <section class="stat-cards">
+      <div class="stat-card">
+        <div class="stat-tag">Total saldo</div>
+        <div class="stat-big" id="fin-total-saldo">Rp 0</div>
+        <div class="stat-sub">semua rekening</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-tag">Pemasukan bulan ini</div>
+        <div class="stat-big pos" id="fin-income-month">Rp 0</div>
+        <div class="stat-sub">bulan berjalan</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-tag">Pengeluaran bulan ini</div>
+        <div class="stat-big neg" id="fin-expense-month">Rp 0</div>
+        <div class="stat-sub">bulan berjalan</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <p class="section-title">Rekening</p>
+        <button class="btn-ghost-sm" id="btn-toggle-account-form">+ Tambah rekening</button>
+      </div>
+
+      <div class="form-grid" id="account-form" style="display:none; margin-bottom:1rem;">
+        <div class="field">
+          <label for="acc-name">Nama rekening</label>
+          <input type="text" id="acc-name" placeholder="BCA, Gopay, Cash, ...">
+        </div>
+        <div class="field">
+          <label for="acc-type">Tipe</label>
+          <select id="acc-type">
+            <option value="bank">Bank</option>
+            <option value="e-wallet">E-wallet</option>
+            <option value="cash">Cash</option>
+            <option value="lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="field" id="acc-initial-field">
+          <label for="acc-initial">Saldo awal</label>
+          <input type="number" id="acc-initial" step="0.01" value="0">
+        </div>
+        <div class="btn-row full">
+          <button class="primary" id="btn-save-account">Simpan rekening</button>
+          <button id="btn-cancel-account">Batal</button>
+        </div>
+      </div>
+
+      <div id="account-list"></div>
+    </section>
+
+    <section class="card">
+      <p class="section-title">Tambah transaksi</p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="tx-account">Rekening</label>
+          <select id="tx-account"></select>
+        </div>
+        <div class="field">
+          <label for="tx-type">Tipe</label>
+          <select id="tx-type">
+            <option value="income">Pemasukan</option>
+            <option value="expense">Pengeluaran</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="tx-category">Kategori</label>
+          <input type="text" id="tx-category" list="tx-category-options" placeholder="Gaji, Trading, Belanja, ...">
+          <datalist id="tx-category-options">
+            <option value="Gaji">
+            <option value="Trading">
+            <option value="Belanja">
+            <option value="Tagihan">
+            <option value="Transfer">
+            <option value="Lainnya">
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="tx-amount">Nominal</label>
+          <input type="number" id="tx-amount" step="0.01" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="tx-date">Tanggal</label>
+          <input type="date" id="tx-date">
+        </div>
+        <div class="field full">
+          <label for="tx-note">Catatan</label>
+          <textarea id="tx-note" placeholder="Opsional"></textarea>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="btn-save-tx">Simpan transaksi</button>
+        <button id="btn-cancel-tx" style="display:none;">Batal edit</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <p class="section-title">Riwayat transaksi</p>
+        <select id="tx-filter-account" class="select-sm"></select>
+      </div>
+      <div id="tx-log"></div>
+    </section>
+
+  </div>
+
   <p class="footer-note">Data tersimpan di Supabase, terhubung ke akunmu sendiri. Bukan nasihat finansial &mdash; keputusan akhir ada di tangan kamu.</p>
 
 </div>
@@ -626,6 +748,13 @@
   let currentUser = null;
   let authMode = "login"; // "login" | "signup"
   const CONTRACT_SIZE = 100; // XAUUSD: 1.00 lot standar = 100 oz
+
+  // ---------------- Keuangan state ----------------
+  let accounts = []; // rows from account_balances view
+  let transactions = [];
+  let editingAccountId = null;
+  let editingTransactionId = null;
+  let txFilterAccount = "all";
 
   const CHECKLIST_ITEMS = [
     "Candle konfirmasi sudah dicek OHLC-nya (engulfing valid / pin bar wick 2-3x body)",
@@ -665,9 +794,13 @@
     document.getElementById("app-screen").style.display = "flex";
     document.getElementById("user-chip").textContent = user.email;
     await loadTrades();
+    await loadAccounts();
+    await loadTransactions();
     renderChecklist();
     updateRiskPreview();
     renderAll();
+    renderFinance();
+    resetTxForm();
   }
 
   function rowToTrade(r) {
@@ -681,6 +814,18 @@
     const { data, error } = await sbClient.from("trades").select("*").order("date", { ascending: false });
     if (error) { console.error(error); trades = []; return; }
     trades = (data || []).map(rowToTrade);
+  }
+
+  async function loadAccounts() {
+    const { data, error } = await sbClient.from("account_balances").select("*").order("name");
+    if (error) { console.error(error); accounts = []; return; }
+    accounts = data || [];
+  }
+
+  async function loadTransactions() {
+    const { data, error } = await sbClient.from("transactions").select("*").order("date", { ascending: false });
+    if (error) { console.error(error); transactions = []; return; }
+    transactions = data || [];
   }
 
   // ---------------- Auth UI ----------------
@@ -1090,6 +1235,276 @@ Analisis pola dari trade-trade ini (disiplin risk management, konsistensi RR, ku
   }
 
   document.getElementById("btn-gen-eval").addEventListener("click", generateWeeklyEval);
+
+  // ---------------- Keuangan ----------------
+  function typeLabel(t) {
+    return { bank: "Bank", "e-wallet": "E-wallet", cash: "Cash", lainnya: "Lainnya" }[t] || t;
+  }
+
+  function formatRupiah(n) {
+    const num = Number(n) || 0;
+    const sign = num < 0 ? "-" : "";
+    return sign + "Rp " + Math.abs(num).toLocaleString("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  function accountName(id) {
+    const a = accounts.find(a => a.account_id === id);
+    return a ? a.name : "-";
+  }
+
+  function isThisMonth(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  function renderFinanceSummary() {
+    const totalSaldo = accounts.reduce((s, a) => s + Number(a.current_balance || 0), 0);
+    document.getElementById("fin-total-saldo").textContent = formatRupiah(totalSaldo);
+
+    const monthTx = transactions.filter(t => isThisMonth(t.date));
+    const income = monthTx.filter(t => t.type === "income").reduce((s, t) => s + Number(t.amount), 0);
+    const expense = monthTx.filter(t => t.type === "expense").reduce((s, t) => s + Number(t.amount), 0);
+    document.getElementById("fin-income-month").textContent = formatRupiah(income);
+    document.getElementById("fin-expense-month").textContent = formatRupiah(expense);
+  }
+
+  function renderAccountDropdowns() {
+    const txSelect = document.getElementById("tx-account");
+    const filterSelect = document.getElementById("tx-filter-account");
+    const prevTxVal = txSelect.value;
+
+    txSelect.innerHTML = accounts.map(a => `<option value="${a.account_id}">${a.name}</option>`).join("");
+    if (accounts.some(a => a.account_id === prevTxVal)) txSelect.value = prevTxVal;
+
+    filterSelect.innerHTML = `<option value="all">Semua rekening</option>` +
+      accounts.map(a => `<option value="${a.account_id}">${a.name}</option>`).join("");
+    filterSelect.value = accounts.some(a => a.account_id === txFilterAccount) ? txFilterAccount : "all";
+    txFilterAccount = filterSelect.value;
+  }
+
+  function renderAccounts() {
+    renderAccountDropdowns();
+    const container = document.getElementById("account-list");
+    if (accounts.length === 0) {
+      container.innerHTML = `<div class="empty-state">Belum ada rekening. Tambah rekening dulu.</div>`;
+      return;
+    }
+    container.innerHTML = "";
+    accounts.forEach(a => {
+      const div = document.createElement("div");
+      div.className = "trade-entry";
+      div.innerHTML = `
+        <div class="trade-entry-top">
+          <span class="meta" style="font-weight:600;color:var(--text);font-size:0.92rem;">${a.name}</span>
+          <span class="badge" style="background:var(--surface-2);color:var(--text-muted);">${typeLabel(a.type)}</span>
+        </div>
+        <div class="trade-entry-body" style="grid-template-columns:1fr;">
+          <div><span>Saldo berjalan</span><b style="font-size:1rem;">${formatRupiah(a.current_balance)}</b></div>
+        </div>
+        <div class="trade-result-row">
+          <button class="edit-acc" data-id="${a.account_id}">Edit</button>
+          <button class="del" data-id="${a.account_id}">Hapus</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    container.querySelectorAll(".edit-acc").forEach(btn => {
+      btn.addEventListener("click", () => startEditAccount(btn.dataset.id));
+    });
+    container.querySelectorAll(".del").forEach(btn => {
+      btn.addEventListener("click", () => deleteAccount(btn.dataset.id));
+    });
+  }
+
+  function startEditAccount(id) {
+    const a = accounts.find(a => a.account_id === id);
+    if (!a) return;
+    editingAccountId = id;
+    document.getElementById("acc-name").value = a.name;
+    document.getElementById("acc-type").value = a.type;
+    document.getElementById("acc-initial-field").style.display = "none";
+    document.getElementById("account-form").style.display = "grid";
+    document.getElementById("btn-save-account").textContent = "Update rekening";
+  }
+
+  function resetAccountForm() {
+    editingAccountId = null;
+    document.getElementById("acc-name").value = "";
+    document.getElementById("acc-type").value = "bank";
+    document.getElementById("acc-initial").value = "0";
+    document.getElementById("acc-initial-field").style.display = "";
+    document.getElementById("account-form").style.display = "none";
+    document.getElementById("btn-save-account").textContent = "Simpan rekening";
+  }
+
+  document.getElementById("btn-toggle-account-form").addEventListener("click", () => {
+    const form = document.getElementById("account-form");
+    if (form.style.display === "grid") {
+      resetAccountForm();
+    } else {
+      editingAccountId = null;
+      document.getElementById("acc-initial-field").style.display = "";
+      document.getElementById("btn-save-account").textContent = "Simpan rekening";
+      form.style.display = "grid";
+    }
+  });
+
+  document.getElementById("btn-cancel-account").addEventListener("click", resetAccountForm);
+
+  document.getElementById("btn-save-account").addEventListener("click", async () => {
+    const name = document.getElementById("acc-name").value.trim();
+    const type = document.getElementById("acc-type").value;
+    const initial = parseFloat(document.getElementById("acc-initial").value) || 0;
+    if (!name) { alert("Nama rekening tidak boleh kosong."); return; }
+
+    if (editingAccountId) {
+      const { error } = await sbClient.from("accounts").update({ name, type }).eq("id", editingAccountId);
+      if (error) { alert("Gagal update rekening: " + error.message); return; }
+    } else {
+      const { error } = await sbClient.from("accounts").insert({
+        user_id: currentUser.id, name, type, initial_balance: initial
+      });
+      if (error) { alert("Gagal tambah rekening: " + error.message); return; }
+    }
+    resetAccountForm();
+    await loadAccounts();
+    await loadTransactions();
+    renderFinance();
+  });
+
+  async function deleteAccount(id) {
+    if (!confirm("Yakin hapus rekening ini? Semua transaksi terkait akan ikut terhapus.")) return;
+    const { error } = await sbClient.from("accounts").delete().eq("id", id);
+    if (error) { alert("Gagal hapus rekening: " + error.message); return; }
+    await loadAccounts();
+    await loadTransactions();
+    renderFinance();
+  }
+
+  function renderTxLog() {
+    const container = document.getElementById("tx-log");
+    let list = transactions;
+    if (txFilterAccount !== "all") {
+      list = list.filter(t => t.account_id === txFilterAccount);
+    }
+    if (list.length === 0) {
+      container.innerHTML = `<div class="empty-state">Belum ada transaksi</div>`;
+      return;
+    }
+    const sorted = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+    container.innerHTML = "";
+    sorted.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "trade-entry";
+      const dateStr = new Date(t.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
+      div.innerHTML = `
+        <div class="trade-entry-top">
+          <span class="badge ${t.type}">${t.type === "income" ? "Pemasukan" : "Pengeluaran"}</span>
+          <span class="meta">${accountName(t.account_id)} &middot; ${dateStr}</span>
+        </div>
+        <div class="trade-entry-body" style="grid-template-columns: repeat(2, 1fr);">
+          <div><span>Kategori</span>${t.category || "-"}</div>
+          <div><span>Nominal</span>${formatRupiah(t.amount)}</div>
+        </div>
+        ${t.note ? `<div class="trade-entry-note">${t.note}</div>` : ""}
+        <div class="trade-result-row">
+          <button class="edit-tx" data-id="${t.id}">Edit</button>
+          <button class="del" data-id="${t.id}">Hapus</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    container.querySelectorAll(".edit-tx").forEach(btn => {
+      btn.addEventListener("click", () => startEditTx(btn.dataset.id));
+    });
+    container.querySelectorAll(".del").forEach(btn => {
+      btn.addEventListener("click", () => deleteTx(btn.dataset.id));
+    });
+  }
+
+  function startEditTx(id) {
+    const t = transactions.find(t => t.id === id);
+    if (!t) return;
+    editingTransactionId = id;
+    document.getElementById("tx-account").value = t.account_id;
+    document.getElementById("tx-type").value = t.type;
+    document.getElementById("tx-category").value = t.category || "";
+    document.getElementById("tx-amount").value = t.amount;
+    document.getElementById("tx-date").value = new Date(t.date).toISOString().slice(0, 10);
+    document.getElementById("tx-note").value = t.note || "";
+    document.getElementById("btn-save-tx").textContent = "Update transaksi";
+    document.getElementById("btn-cancel-tx").style.display = "inline-block";
+  }
+
+  function resetTxForm() {
+    editingTransactionId = null;
+    document.getElementById("tx-type").value = "income";
+    document.getElementById("tx-category").value = "";
+    document.getElementById("tx-amount").value = "";
+    document.getElementById("tx-date").valueAsDate = new Date();
+    document.getElementById("tx-note").value = "";
+    document.getElementById("btn-save-tx").textContent = "Simpan transaksi";
+    document.getElementById("btn-cancel-tx").style.display = "none";
+  }
+
+  document.getElementById("btn-cancel-tx").addEventListener("click", resetTxForm);
+
+  document.getElementById("btn-save-tx").addEventListener("click", async () => {
+    const accountId = document.getElementById("tx-account").value;
+    const type = document.getElementById("tx-type").value;
+    const category = document.getElementById("tx-category").value.trim();
+    const amount = parseFloat(document.getElementById("tx-amount").value);
+    const dateVal = document.getElementById("tx-date").value;
+    const note = document.getElementById("tx-note").value.trim();
+
+    if (!accountId) { alert("Tambah rekening dulu sebelum mencatat transaksi."); return; }
+    if (!category) { alert("Isi kategori transaksi."); return; }
+    if (isNaN(amount) || amount <= 0) { alert("Isi nominal transaksi yang valid."); return; }
+    if (!dateVal) { alert("Isi tanggal transaksi."); return; }
+
+    const payload = {
+      user_id: currentUser.id,
+      account_id: accountId,
+      type, category, amount,
+      date: new Date(dateVal).toISOString(),
+      note
+    };
+
+    if (editingTransactionId) {
+      const { error } = await sbClient.from("transactions").update(payload).eq("id", editingTransactionId);
+      if (error) { alert("Gagal update transaksi: " + error.message); return; }
+    } else {
+      const { error } = await sbClient.from("transactions").insert(payload);
+      if (error) { alert("Gagal simpan transaksi: " + error.message); return; }
+    }
+    resetTxForm();
+    await loadAccounts();
+    await loadTransactions();
+    renderFinance();
+  });
+
+  async function deleteTx(id) {
+    if (!confirm("Hapus transaksi ini?")) return;
+    const { error } = await sbClient.from("transactions").delete().eq("id", id);
+    if (error) { alert("Gagal hapus transaksi: " + error.message); return; }
+    await loadAccounts();
+    await loadTransactions();
+    renderFinance();
+  }
+
+  document.getElementById("tx-filter-account").addEventListener("change", (e) => {
+    txFilterAccount = e.target.value;
+    renderTxLog();
+  });
+
+  function renderFinance() {
+    renderFinanceSummary();
+    renderAccounts();
+    renderTxLog();
+  }
 
   boot();
 </script>
