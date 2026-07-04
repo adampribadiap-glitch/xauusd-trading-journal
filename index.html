@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jurnal Trading XAUUSD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --surface-2: #1f1f23;
+    --border: #2a2a2e;
+    --text: #f2f2f0;
+    --text-muted: #9b9b9e;
+    --text-faint: #6b6b6f;
+    --accent: #ff6b47;
+    --accent-dim: rgba(255,107,71,0.14);
+    --win: #3ddc84;
+    --win-dim: rgba(61,220,132,0.14);
+    --loss: #ff5c5c;
+    --loss-dim: rgba(255,92,92,0.14);
+    --warn: #ffb648;
+    --warn-dim: rgba(255,182,72,0.14);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 16px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .app {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.75rem 1.25rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  /* Auth / preview screens */
+  .center-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    width: 100%;
+    max-width: 380px;
+  }
+  .auth-card .brand { margin-bottom: 1.5rem; justify-content: center; }
+  .auth-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .auth-tab {
+    flex: 1; background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--text-muted); font-weight: 600; font-size: 0.85rem;
+    padding: 0.5rem; border-radius: var(--radius-sm); cursor: pointer;
+  }
+  .auth-tab.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+  .auth-msg { font-size: 0.82rem; margin: 0.4rem 0 0.9rem; min-height: 1.1em; }
+  .auth-msg.error { color: var(--loss); }
+  .auth-msg.info { color: var(--win); }
+  .preview-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    max-width: 460px;
+  }
+  .preview-card .tag {
+    font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.06em;
+    color: var(--warn); text-transform: uppercase; margin-bottom: 0.6rem; display: block;
+  }
+  .preview-card h2 { font-size: 1.1rem; margin: 0 0 0.6rem; }
+  .preview-card p { font-size: 0.86rem; color: var(--text-muted); margin: 0 0 0.6rem; }
+  .preview-card code {
+    background: var(--surface-2); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.8rem;
+  }
+
+  /* Topbar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: 0.25rem;
+  }
+  .brand { display: flex; align-items: center; gap: 0.6rem; }
+  .brand-icon {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-dim);
+    border-radius: 8px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .brand-icon svg { width: 17px; height: 17px; }
+  .brand-name { font-weight: 700; font-size: 1.2rem; letter-spacing: -0.01em; }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+  .today-label {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .user-chip {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+  }
+  .btn-ghost-sm {
+    background: none; border: 1px solid var(--border); color: var(--text-muted);
+    font-size: 0.78rem; padding: 0.35rem 0.7rem; border-radius: var(--radius-sm); cursor: pointer;
+  }
+
+  /* Stat cards */
+  .stat-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.15rem 1.2rem;
+  }
+  .stat-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    padding: 0.22rem 0.55rem;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+  }
+  .stat-card.accent .stat-tag { color: var(--accent); background: var(--accent-dim); }
+  .stat-big { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; color: var(--accent); }
+  .stat-big.pos { color: var(--win); }
+  .stat-big.neg { color: var(--loss); }
+  .stat-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+  @media (max-width: 640px) { .stat-cards { grid-template-columns: 1fr; } }
+
+  /* Phase / quota bar */
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.15rem;
+  }
+  .phase-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; }
+  .phase-title { font-weight: 600; font-size: 0.92rem; }
+  .phase-count { font-family: var(--mono); font-size: 0.78rem; color: var(--text-muted); }
+  .phase-bar { display: flex; gap: 6px; }
+  .phase-seg { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); }
+  .phase-seg.win { background: var(--win); }
+  .phase-seg.loss { background: var(--loss); }
+  .phase-seg.be { background: var(--text-faint); }
+  .phase-seg.pending { background: var(--warn); }
+
+  /* Day strip */
+  .week-nav-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.55rem;
+  }
+  .day-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+  .day-cell {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.3rem;
+    text-align: center;
+  }
+  .day-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .day-name { font-family: var(--mono); font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; }
+  .day-num { font-size: 1.05rem; font-weight: 700; margin: 0.15rem 0 0.45rem; }
+  .day-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); margin: 0 auto; }
+  .day-dot.win { background: var(--win); }
+  .day-dot.loss { background: var(--loss); }
+  .day-dot.pending { background: var(--warn); }
+
+  /* Spotlight card */
+  .spotlight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.15rem 1.3rem;
+  }
+  .spotlight.warn { border-left-color: var(--warn); }
+  .spotlight.stop { border-left-color: var(--loss); }
+  .spotlight-meta {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.55rem;
+  }
+  .spotlight.warn .spotlight-meta { color: var(--warn); }
+  .spotlight.stop .spotlight-meta { color: var(--loss); }
+  .spotlight-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.35rem; }
+  .spotlight-sub { font-size: 0.86rem; color: var(--text-muted); }
+
+  /* Tabs */
+  .tabs-row {
+    display: flex;
+    gap: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0.75rem 0.1rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab-panel { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Cards / sections */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+  }
+
+  /* Checklist */
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item input[type="checkbox"] {
+    width: 19px; height: 19px; margin-top: 2px;
+    accent-color: var(--accent);
+    flex-shrink: 0; cursor: pointer;
+  }
+  .checklist-item label { font-size: 0.88rem; cursor: pointer; }
+  .checklist-result {
+    margin-top: 0.9rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+  }
+  .checklist-result.pass { background: var(--win-dim); color: var(--win); }
+  .checklist-result.fail { background: var(--warn-dim); color: var(--warn); }
+
+  /* Rules */
+  .rules-list { margin: 0; padding-left: 0; list-style: none; }
+  .rules-list li { display: flex; gap: 0.6rem; font-size: 0.86rem; padding: 0.4rem 0; color: var(--text); }
+  .rules-list li::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); margin-top: 0.5rem; flex-shrink: 0;
+  }
+
+  /* Form */
+  .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 0.74rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.88rem;
+    font-family: inherit;
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .field textarea { resize: vertical; min-height: 50px; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim);
+  }
+  .risk-preview {
+    grid-column: 1 / -1;
+    font-size: 0.82rem;
+    padding: 0.65rem 0.8rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--text-muted);
+  }
+  .risk-preview b { color: var(--text); }
+  .btn-row { display: flex; gap: 0.6rem; margin-top: 0.4rem; }
+  button {
+    font-family: inherit; font-size: 0.88rem; font-weight: 600;
+    padding: 0.65rem 1.1rem; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d08; flex: 1; }
+  button.primary:disabled { background: var(--text-faint); border-color: var(--text-faint); color: var(--bg); cursor: not-allowed; }
+  button:hover:not(:disabled) { opacity: 0.85; }
+
+  /* Trade log */
+  .trade-entry {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.8rem 0.9rem;
+    margin-bottom: 0.6rem;
+  }
+  .trade-entry:last-child { margin-bottom: 0; }
+  .trade-entry-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+  .trade-entry-top .meta { font-size: 0.78rem; color: var(--text-muted); }
+  .badge {
+    font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem;
+    border-radius: 999px; text-transform: uppercase; letter-spacing: 0.02em;
+  }
+  .badge.buy { background: var(--win-dim); color: var(--win); }
+  .badge.sell { background: var(--loss-dim); color: var(--loss); }
+  .trade-entry-body {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem;
+    font-size: 0.82rem; margin-bottom: 0.4rem;
+  }
+  .trade-entry-body div span { display: block; color: var(--text-faint); font-size: 0.66rem; text-transform: uppercase; }
+  @media (max-width: 560px) { .trade-entry-body { grid-template-columns: repeat(2, 1fr); } }
+  .trade-entry-note {
+    font-size: 0.82rem; color: var(--text-muted); margin-top: 0.4rem;
+    padding-top: 0.4rem; border-top: 1px dashed var(--border);
+  }
+  .trade-result-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .trade-result-row select {
+    flex: 1; padding: 0.4rem 0.5rem; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 0.8rem; background: var(--surface-2); color: var(--text);
+  }
+  .trade-result-row button.del { padding: 0.4rem 0.6rem; font-size: 0.78rem; color: var(--loss); }
+  .empty-state { text-align: center; color: var(--text-faint); font-size: 0.85rem; padding: 1.5rem 0; }
+
+  /* Weekly eval */
+  .eval-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .eval-grid { grid-template-columns: repeat(2, 1fr); } }
+  .eval-grid .stat-mini {
+    background: var(--surface-2); border-radius: var(--radius-sm); padding: 0.7rem 0.6rem;
+  }
+  .eval-grid .stat-mini .label {
+    font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem;
+  }
+  .eval-grid .stat-mini .value { font-size: 1.1rem; font-weight: 700; }
+  .eval-grid .stat-mini .value.pos { color: var(--win); }
+  .eval-grid .stat-mini .value.neg { color: var(--loss); }
+
+  .footer-note { text-align: center; font-size: 0.76rem; color: var(--text-faint); margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- ============ PREVIEW NOTICE (shown only if Supabase library failed to load, e.g. inside Claude's sandbox) ============ -->
+<div id="preview-screen" class="center-screen" style="display:none;">
+  <div class="preview-card">
+    <span class="tag">Mode preview</span>
+    <h2>Pustaka Supabase tidak termuat</h2>
+    <p>Preview di dalam Claude hanya boleh memuat script dari <code>cdnjs.cloudflare.com</code>, sedangkan Supabase client di-hosting di jsDelivr. Ini bukan bug di kodenya.</p>
+    <p>Setelah kamu upload file ini ke GitHub Pages (atau hosting lain), login &amp; database akan berfungsi normal karena pembatasan ini hanya berlaku di sandbox preview Claude.</p>
+    <p>Jangan lupa ganti <code>SUPABASE_URL</code> dan <code>SUPABASE_ANON_KEY</code> di bagian atas script dengan milik project-mu sendiri.</p>
+  </div>
+</div>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="auth-screen" class="center-screen" style="display:none;">
+  <div class="auth-card">
+    <div class="brand">
+      <span class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 17 9 11 13 15 21 6"></polyline>
+          <polyline points="15 6 21 6 21 12"></polyline>
+        </svg>
+      </span>
+      <span class="brand-name">Jurnal Trading XAUUSD</span>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" type="button">Masuk</button>
+      <button class="auth-tab" id="tab-signup" type="button">Daftar</button>
+    </div>
+    <div class="field full" style="margin-bottom:0.75rem;">
+      <label for="auth-email">Email</label>
+      <input type="email" id="auth-email" placeholder="kamu@email.com">
+    </div>
+    <div class="field full" style="margin-bottom:0.4rem;">
+      <label for="auth-password">Password</label>
+      <input type="password" id="auth-password" placeholder="Minimal 6 karakter">
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+    <button class="primary" id="btn-auth-submit" style="width:100%;">Masuk</button>
+  </div>
+</div>
+
+<!-- ============ MAIN APP (only visible after login) ============ -->
+<div class="app" id="app-screen" style="display:none;">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 17 9 11 13 15 21 6"></polyline>
+          <polyline points="15 6 21 6 21 12"></polyline>
+        </svg>
+      </span>
+      <span class="brand-name">Jurnal Trading XAUUSD</span>
+    </div>
+    <div class="topbar-right">
+      <span class="today-label" id="today-label">HARI INI · —</span>
+      <span class="user-chip" id="user-chip">-</span>
+      <button class="btn-ghost-sm" id="btn-logout">Keluar</button>
+    </div>
+  </header>
+
+  <section class="stat-cards">
+    <div class="stat-card">
+      <div class="stat-tag">Total trade</div>
+      <div class="stat-big" id="card-total">0</div>
+      <div class="stat-sub">trade tercatat sejak mulai</div>
+    </div>
+    <div class="stat-card accent">
+      <div class="stat-tag">Win rate</div>
+      <div class="stat-big" id="card-winrate">-</div>
+      <div class="stat-sub" id="card-winrate-sub">belum ada trade closed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-tag">Total P/L</div>
+      <div class="stat-big" id="card-pl">$0</div>
+      <div class="stat-sub">akumulasi &middot; modal $200</div>
+    </div>
+  </section>
+
+  <section class="phase-card">
+    <div class="phase-top">
+      <span class="phase-title">Kuota trading hari ini</span>
+      <span class="phase-count" id="phase-count">0 / 2</span>
+    </div>
+    <div class="phase-bar" id="phase-bar"></div>
+  </section>
+
+  <section>
+    <div class="week-nav-label">Minggu ini</div>
+    <div class="day-strip" id="day-strip"></div>
+  </section>
+
+  <section class="spotlight" id="spotlight-card">
+    <div class="spotlight-meta" id="spotlight-meta">SIAP ENTRY</div>
+    <div class="spotlight-title" id="spotlight-title">Belum ada trade hari ini</div>
+    <div class="spotlight-sub" id="spotlight-sub">Cek checklist dulu sebelum entry pertama hari ini.</div>
+  </section>
+
+  <div class="tabs-row">
+    <button class="tab active" data-tab="trading">Trading &amp; Checklist</button>
+    <button class="tab" data-tab="riwayat">Riwayat &amp; Evaluasi</button>
+  </div>
+
+  <div class="tab-panel" data-panel="trading">
+
+    <section class="card">
+      <p class="section-title">Checklist sebelum entry</p>
+      <div id="checklist"></div>
+      <div class="checklist-result" id="checklist-result">Centang semua syarat untuk lanjut entry</div>
+    </section>
+
+    <section class="card">
+      <p class="section-title">Aturan disiplin harian</p>
+      <ul class="rules-list">
+        <li>Maksimal 2 trade per hari. Setelah trade ke-2 selesai, berhenti.</li>
+        <li>Stop trading kalau sudah 2 loss beruntun di hari itu.</li>
+        <li>Risiko per trade target 1-2%, maksimal toleransi 5% dari modal.</li>
+        <li>Jangan pernah menggeser SL menjauh dari entry setelah posisi terbuka.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <p class="section-title">Tambah trade</p>
+      <div class="form-grid">
+        <div class="field">
+          <label for="f-pair">Pair</label>
+          <input type="text" id="f-pair" value="XAUUSD">
+        </div>
+        <div class="field">
+          <label for="f-tf">Timeframe</label>
+          <select id="f-tf">
+            <option>M5</option>
+            <option>M15</option>
+            <option selected>M30</option>
+            <option>H1</option>
+            <option>H4</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-bias">Bias</label>
+          <select id="f-bias">
+            <option value="buy">Buy</option>
+            <option value="sell">Sell</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="f-lot">Lot</label>
+          <input type="number" id="f-lot" value="0.01" step="0.01" min="0.01">
+        </div>
+        <div class="field">
+          <label for="f-entry">Entry</label>
+          <input type="number" id="f-entry" step="0.01" placeholder="4153.00">
+        </div>
+        <div class="field">
+          <label for="f-sl">Stop loss</label>
+          <input type="number" id="f-sl" step="0.01" placeholder="4147.00">
+        </div>
+        <div class="field">
+          <label for="f-tp">Take profit</label>
+          <input type="number" id="f-tp" step="0.01" placeholder="4165.00">
+        </div>
+        <div class="field">
+          <label for="f-result">Hasil</label>
+          <select id="f-result">
+            <option value="pending">Belum closed</option>
+            <option value="win">Win</option>
+            <option value="loss">Loss</option>
+            <option value="be">Breakeven</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="f-note">Catatan / evaluasi</label>
+          <textarea id="f-note" placeholder="Alasan entry, apa yang benar, apa yang perlu diperbaiki..."></textarea>
+        </div>
+        <div class="risk-preview" id="risk-preview">Isi entry dan SL untuk lihat estimasi risiko</div>
+      </div>
+      <div class="btn-row">
+        <button class="primary" id="btn-add" disabled>Simpan trade</button>
+        <button id="btn-reset-form">Bersihkan form</button>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="tab-panel" data-panel="riwayat" style="display:none">
+
+    <section class="card">
+      <p class="section-title">Riwayat trade</p>
+      <div id="trade-log"></div>
+    </section>
+
+    <section class="card">
+      <p class="section-title">Evaluasi mingguan</p>
+      <div class="eval-grid">
+        <div class="stat-mini">
+          <div class="label">Trade minggu ini</div>
+          <div class="value" id="week-total">0</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">Win rate</div>
+          <div class="value" id="week-winrate">-</div>
+        </div>
+        <div class="stat-mini">
+          <div class="label">P/L minggu ini</div>
+          <div class="value" id="week-pl">$0</div>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-bottom: 0.6rem;">
+        <button class="primary" id="btn-gen-eval">Generate evaluasi AI</button>
+      </div>
+      <div class="risk-preview" id="eval-ai-result">Klik tombol di atas untuk membuat evaluasi otomatis dari trade minggu ini.</div>
+    </section>
+
+  </div>
+
+  <p class="footer-note">Data tersimpan di Supabase, terhubung ke akunmu sendiri. Bukan nasihat finansial &mdash; keputusan akhir ada di tangan kamu.</p>
+
+</div>
+
+<script>
+  // ============ GANTI DENGAN KREDENSIAL SUPABASE PROJECT KAMU ============
+  const SUPABASE_URL = "https://nbthighajdguvrnmsrlc.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5idGhpZ2hhamRndXZybm1zcmxjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODAyMTIsImV4cCI6MjA5ODc1NjIxMn0.eloODkcBwA3Bap-DxxcProeIYkycSBR2M22BLFLmRQE";
+  // =========================================================================
+
+  let sbClient = null;
+  try {
+    if (typeof supabase !== "undefined" && SUPABASE_URL.indexOf("YOUR_PROJECT") === -1) {
+      sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch (e) {
+    console.warn("Gagal inisialisasi Supabase client:", e);
+  }
+
+  let trades = [];
+  let currentUser = null;
+  let authMode = "login"; // "login" | "signup"
+  const CONTRACT_SIZE = 100; // XAUUSD: 1.00 lot standar = 100 oz
+
+  const CHECKLIST_ITEMS = [
+    "Candle konfirmasi sudah dicek OHLC-nya (engulfing valid / pin bar wick 2-3x body)",
+    "Sinyal searah dengan struktur timeframe lebih besar (H4/H1)",
+    "SL ditaruh di level teknikal (swing low/high), bukan angka asal pendek",
+    "RR minimal 1:2 realistis tercapai (ada ruang ke level S/R berikutnya)",
+    "Tidak sedang dalam rentang berita HIGH IMPACT (cek kalender ekonomi)"
+  ];
+
+  // ---------------- Boot ----------------
+  async function boot() {
+    if (!sbClient) {
+      document.getElementById("preview-screen").style.display = "flex";
+      return;
+    }
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session) {
+      onLogin(session.user);
+    } else {
+      showAuthScreen();
+    }
+    sbClient.auth.onAuthStateChange((_event, session) => {
+      if (session) onLogin(session.user);
+      else showAuthScreen();
+    });
+  }
+
+  function showAuthScreen() {
+    currentUser = null;
+    document.getElementById("auth-screen").style.display = "flex";
+    document.getElementById("app-screen").style.display = "none";
+  }
+
+  async function onLogin(user) {
+    currentUser = user;
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("app-screen").style.display = "flex";
+    document.getElementById("user-chip").textContent = user.email;
+    await loadTrades();
+    renderChecklist();
+    updateRiskPreview();
+    renderAll();
+  }
+
+  function rowToTrade(r) {
+    return {
+      id: r.id, date: r.date, pair: r.pair, tf: r.tf, bias: r.bias,
+      lot: r.lot, entry: r.entry, sl: r.sl, tp: r.tp, result: r.result, note: r.note
+    };
+  }
+
+  async function loadTrades() {
+    const { data, error } = await sbClient.from("trades").select("*").order("date", { ascending: false });
+    if (error) { console.error(error); trades = []; return; }
+    trades = (data || []).map(rowToTrade);
+  }
+
+  // ---------------- Auth UI ----------------
+  document.getElementById("tab-login").addEventListener("click", () => setAuthMode("login"));
+  document.getElementById("tab-signup").addEventListener("click", () => setAuthMode("signup"));
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    document.getElementById("tab-login").classList.toggle("active", mode === "login");
+    document.getElementById("tab-signup").classList.toggle("active", mode === "signup");
+    document.getElementById("btn-auth-submit").textContent = mode === "login" ? "Masuk" : "Daftar";
+    setAuthMsg("");
+  }
+
+  function setAuthMsg(msg, type) {
+    const el = document.getElementById("auth-msg");
+    el.textContent = msg || "";
+    el.className = "auth-msg" + (type ? " " + type : "");
+  }
+
+  document.getElementById("btn-auth-submit").addEventListener("click", async () => {
+    const email = document.getElementById("auth-email").value.trim();
+    const password = document.getElementById("auth-password").value;
+    if (!email || !password) { setAuthMsg("Isi email dan password dulu.", "error"); return; }
+    setAuthMsg("Memproses...");
+    if (authMode === "login") {
+      const { error } = await sbClient.auth.signInWithPassword({ email, password });
+      if (error) setAuthMsg(error.message, "error");
+    } else {
+      const { error } = await sbClient.auth.signUp({ email, password });
+      if (error) setAuthMsg(error.message, "error");
+      else setAuthMsg("Akun dibuat. Cek email untuk konfirmasi, lalu masuk.", "info");
+    }
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", async () => {
+    await sbClient.auth.signOut();
+  });
+
+  // ---------------- Checklist ----------------
+  function renderChecklist() {
+    const container = document.getElementById("checklist");
+    container.innerHTML = "";
+    CHECKLIST_ITEMS.forEach((text, i) => {
+      const row = document.createElement("div");
+      row.className = "checklist-item";
+      row.innerHTML = `
+        <input type="checkbox" id="chk-${i}" data-idx="${i}">
+        <label for="chk-${i}">${text}</label>
+      `;
+      container.appendChild(row);
+    });
+    container.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.addEventListener("change", updateChecklistResult);
+    });
+    updateChecklistResult();
+  }
+
+  function updateChecklistResult() {
+    const boxes = document.querySelectorAll("#checklist input[type=checkbox]");
+    const checked = Array.from(boxes).filter(b => b.checked).length;
+    const result = document.getElementById("checklist-result");
+    if (checked === boxes.length) {
+      result.className = "checklist-result pass";
+      result.textContent = "Semua syarat terpenuhi — setup layak dipertimbangkan";
+    } else {
+      result.className = "checklist-result fail";
+      result.textContent = `${checked}/${boxes.length} syarat terpenuhi — belum layak entry`;
+    }
+  }
+
+  // ---------------- Helpers ----------------
+  function isToday(iso) {
+    const d = new Date(iso);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    date.setDate(date.getDate() + diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+  function isThisWeek(iso) {
+    const d = new Date(iso);
+    const start = getMonday(new Date());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+    return d >= start && d < end;
+  }
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function usdValue(priceDist, lot) { return round2(priceDist * lot * CONTRACT_SIZE); }
+
+  function updateRiskPreview() {
+    const entry = parseFloat(document.getElementById("f-entry").value);
+    const sl = parseFloat(document.getElementById("f-sl").value);
+    const tp = parseFloat(document.getElementById("f-tp").value);
+    const lot = parseFloat(document.getElementById("f-lot").value);
+    const preview = document.getElementById("risk-preview");
+    const btnAdd = document.getElementById("btn-add");
+
+    if (isNaN(entry) || isNaN(sl) || isNaN(lot)) {
+      preview.textContent = "Isi entry dan SL untuk lihat estimasi risiko";
+      btnAdd.disabled = true;
+      return;
+    }
+    const slDist = Math.abs(entry - sl);
+    const riskUsd = usdValue(slDist, lot);
+    let text = `Jarak SL: <b>${round2(slDist * 100)} pip</b> &middot; Estimasi risiko: <b>$${riskUsd.toFixed(2)}</b>`;
+    if (!isNaN(tp)) {
+      const tpDist = Math.abs(tp - entry);
+      const tpUsd = usdValue(tpDist, lot);
+      const rr = slDist > 0 ? round2(tpDist / slDist * 10) / 10 : 0;
+      text += ` &middot; Estimasi profit: <b>$${tpUsd.toFixed(2)}</b> &middot; RR sekitar <b>1:${rr}</b>`;
+    }
+    const modal = 200;
+    const pct = round2(riskUsd / modal * 1000) / 10;
+    if (pct > 5) {
+      text += ` &mdash; <span style="color: var(--loss)">${pct}% dari modal, di atas batas wajar</span>`;
+    } else {
+      text += ` &mdash; ${pct}% dari modal`;
+    }
+    preview.innerHTML = text;
+    btnAdd.disabled = false;
+  }
+
+  function renderSpotlight() {
+    const todayTrades = trades.filter(t => isToday(t.date));
+    const todayLosses = todayTrades.filter(t => t.result === "loss").length;
+    const todayWins = todayTrades.filter(t => t.result === "win").length;
+    const card = document.getElementById("spotlight-card");
+    const meta = document.getElementById("spotlight-meta");
+    const title = document.getElementById("spotlight-title");
+    const sub = document.getElementById("spotlight-sub");
+    card.className = "spotlight";
+    if (todayLosses >= 2) {
+      card.classList.add("stop");
+      meta.textContent = "STOP TRADING";
+      title.textContent = "Kuota loss harian tercapai";
+      sub.textContent = `Sudah ${todayLosses} loss hari ini. Tutup platform, evaluasi besok.`;
+    } else if (todayTrades.length >= 2) {
+      card.classList.add("stop");
+      meta.textContent = "KUOTA HABIS";
+      title.textContent = "2 trade hari ini sudah tercatat";
+      sub.textContent = "Berhenti dulu sesuai aturan disiplin harian.";
+    } else if (todayTrades.length === 1) {
+      card.classList.add("warn");
+      meta.textContent = "1 KESEMPATAN LAGI";
+      title.textContent = "1 trade tersisa hari ini";
+      sub.textContent = `${todayWins} win, ${todayLosses} loss sejauh ini. Pastikan checklist terpenuhi sebelum entry berikutnya.`;
+    } else {
+      meta.textContent = "SIAP ENTRY";
+      title.textContent = "Belum ada trade hari ini";
+      sub.textContent = "Cek checklist dulu sebelum entry pertama hari ini.";
+    }
+  }
+
+  function renderPhaseBar() {
+    const todayTrades = trades.filter(t => isToday(t.date));
+    document.getElementById("phase-count").textContent = `${todayTrades.length} / 2`;
+    const bar = document.getElementById("phase-bar");
+    bar.innerHTML = "";
+    for (let i = 0; i < 2; i++) {
+      const seg = document.createElement("div");
+      seg.className = "phase-seg";
+      if (todayTrades[i]) {
+        const r = todayTrades[i].result;
+        seg.classList.add(r === "win" ? "win" : r === "loss" ? "loss" : r === "be" ? "be" : "pending");
+      }
+      bar.appendChild(seg);
+    }
+  }
+
+  function renderDayStrip() {
+    const strip = document.getElementById("day-strip");
+    strip.innerHTML = "";
+    const monday = getMonday(new Date());
+    const labels = ["SEN", "SEL", "RAB", "KAM", "JUM", "SAB", "MIN"];
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const isTodayCell = d.getTime() === today.getTime();
+      const dayTrades = trades.filter(t => new Date(t.date).toDateString() === d.toDateString());
+      let dotClass = "";
+      if (dayTrades.some(t => t.result === "win")) dotClass = "win";
+      else if (dayTrades.some(t => t.result === "loss")) dotClass = "loss";
+      else if (dayTrades.length > 0) dotClass = "pending";
+      const cell = document.createElement("div");
+      cell.className = "day-cell" + (isTodayCell ? " today" : "");
+      cell.innerHTML = `<div class="day-name">${labels[i]}</div><div class="day-num">${d.getDate()}</div><div class="day-dot ${dotClass}"></div>`;
+      strip.appendChild(cell);
+    }
+  }
+
+  function renderTradeLog() {
+    const container = document.getElementById("trade-log");
+    if (trades.length === 0) {
+      container.innerHTML = `<div class="empty-state">Belum ada trade tercatat</div>`;
+      return;
+    }
+    const sorted = [...trades].sort((a, b) => new Date(b.date) - new Date(a.date));
+    container.innerHTML = "";
+    sorted.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "trade-entry";
+      const dateStr = new Date(t.date).toLocaleString("id-ID", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+      div.innerHTML = `
+        <div class="trade-entry-top">
+          <span class="badge ${t.bias}">${t.bias}</span>
+          <span class="meta">${t.pair} &middot; ${t.tf} &middot; ${dateStr}</span>
+        </div>
+        <div class="trade-entry-body">
+          <div><span>Entry</span>${t.entry}</div>
+          <div><span>SL</span>${t.sl}</div>
+          <div><span>TP</span>${t.tp || "-"}</div>
+          <div><span>Lot</span>${t.lot}</div>
+        </div>
+        ${t.note ? `<div class="trade-entry-note">${t.note}</div>` : ""}
+        <div class="trade-result-row">
+          <select data-id="${t.id}" class="result-select">
+            <option value="pending" ${t.result === "pending" ? "selected" : ""}>Belum closed</option>
+            <option value="win" ${t.result === "win" ? "selected" : ""}>Win</option>
+            <option value="loss" ${t.result === "loss" ? "selected" : ""}>Loss</option>
+            <option value="be" ${t.result === "be" ? "selected" : ""}>Breakeven</option>
+          </select>
+          <button class="del" data-id="${t.id}">Hapus</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+
+    container.querySelectorAll(".result-select").forEach(sel => {
+      sel.addEventListener("change", async (e) => {
+        const id = e.target.dataset.id;
+        const { error } = await sbClient.from("trades").update({ result: e.target.value }).eq("id", id);
+        if (error) { alert("Gagal update: " + error.message); return; }
+        const trade = trades.find(t => t.id === id);
+        if (trade) trade.result = e.target.value;
+        renderAll();
+      });
+    });
+    container.querySelectorAll(".del").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.dataset.id;
+        const { error } = await sbClient.from("trades").delete().eq("id", id);
+        if (error) { alert("Gagal hapus: " + error.message); return; }
+        trades = trades.filter(t => t.id !== id);
+        renderAll();
+      });
+    });
+  }
+
+  function computeStats(list) {
+    const closed = list.filter(t => t.result === "win" || t.result === "loss");
+    const wins = closed.filter(t => t.result === "win").length;
+    const winRate = closed.length > 0 ? round2(wins / closed.length * 1000) / 10 : null;
+    let totalPl = 0;
+    let rrSum = 0, rrCount = 0;
+    list.forEach(t => {
+      const entry = parseFloat(t.entry), sl = parseFloat(t.sl), tp = parseFloat(t.tp), lot = parseFloat(t.lot);
+      if (!isNaN(entry) && !isNaN(sl) && !isNaN(lot)) {
+        const slDist = Math.abs(entry - sl);
+        const risk = usdValue(slDist, lot);
+        if (t.result === "win" && !isNaN(tp)) {
+          const reward = usdValue(Math.abs(tp - entry), lot);
+          totalPl += reward;
+        } else if (t.result === "loss") {
+          totalPl -= risk;
+        }
+        if (!isNaN(tp) && slDist > 0) {
+          rrSum += Math.abs(tp - entry) / slDist;
+          rrCount++;
+        }
+      }
+    });
+    const avgRr = rrCount > 0 ? round2(rrSum / rrCount * 10) / 10 : null;
+    return { total: list.length, winRate, totalPl: round2(totalPl), avgRr };
+  }
+
+  function renderStats() {
+    const all = computeStats(trades);
+    document.getElementById("card-total").textContent = all.total;
+    document.getElementById("card-winrate").textContent = all.winRate !== null ? all.winRate + "%" : "-";
+    document.getElementById("card-winrate-sub").textContent = all.avgRr !== null ? `avg RR 1:${all.avgRr}` : "belum ada trade closed";
+    const plEl = document.getElementById("card-pl");
+    plEl.textContent = (all.totalPl >= 0 ? "$" : "-$") + Math.abs(all.totalPl).toFixed(2);
+    plEl.className = "stat-big " + (all.totalPl > 0 ? "pos" : all.totalPl < 0 ? "neg" : "");
+
+    const weekTrades = trades.filter(t => isThisWeek(t.date));
+    const week = computeStats(weekTrades);
+    document.getElementById("week-total").textContent = week.total;
+    document.getElementById("week-winrate").textContent = week.winRate !== null ? week.winRate + "%" : "-";
+    const weekPlEl = document.getElementById("week-pl");
+    weekPlEl.textContent = (week.totalPl >= 0 ? "$" : "-$") + Math.abs(week.totalPl).toFixed(2);
+    weekPlEl.className = "value " + (week.totalPl > 0 ? "pos" : week.totalPl < 0 ? "neg" : "");
+  }
+
+  function renderTodayLabel() {
+    const now = new Date();
+    const label = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    document.getElementById("today-label").textContent = "HARI INI · " + label.toUpperCase();
+  }
+
+  function renderAll() {
+    renderTodayLabel();
+    renderSpotlight();
+    renderPhaseBar();
+    renderDayStrip();
+    renderTradeLog();
+    renderStats();
+  }
+
+  function clearForm() {
+    document.getElementById("f-entry").value = "";
+    document.getElementById("f-sl").value = "";
+    document.getElementById("f-tp").value = "";
+    document.getElementById("f-note").value = "";
+    document.getElementById("f-result").value = "pending";
+    document.getElementById("f-lot").value = "0.01";
+    updateRiskPreview();
+  }
+
+  document.getElementById("btn-add").addEventListener("click", async () => {
+    const payload = {
+      user_id: currentUser.id,
+      date: new Date().toISOString(),
+      pair: document.getElementById("f-pair").value || "XAUUSD",
+      tf: document.getElementById("f-tf").value,
+      bias: document.getElementById("f-bias").value,
+      lot: parseFloat(document.getElementById("f-lot").value),
+      entry: parseFloat(document.getElementById("f-entry").value),
+      sl: parseFloat(document.getElementById("f-sl").value),
+      tp: document.getElementById("f-tp").value ? parseFloat(document.getElementById("f-tp").value) : null,
+      result: document.getElementById("f-result").value,
+      note: document.getElementById("f-note").value
+    };
+    const { data, error } = await sbClient.from("trades").insert(payload).select().single();
+    if (error) { alert("Gagal simpan trade: " + error.message); return; }
+    trades.push(rowToTrade(data));
+    clearForm();
+    renderAll();
+  });
+
+  document.getElementById("btn-reset-form").addEventListener("click", clearForm);
+
+  ["f-entry", "f-sl", "f-tp", "f-lot"].forEach(id => {
+    document.getElementById(id).addEventListener("input", updateRiskPreview);
+  });
+
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const target = btn.dataset.tab;
+      document.querySelectorAll(".tab-panel").forEach(p => {
+        p.style.display = p.dataset.panel === target ? "flex" : "none";
+      });
+    });
+  });
+
+  async function generateWeeklyEval() {
+    const box = document.getElementById("eval-ai-result");
+    const weekTrades = trades.filter(t => isThisWeek(t.date));
+    if (weekTrades.length === 0) {
+      box.textContent = "Belum ada trade minggu ini untuk dievaluasi.";
+      return;
+    }
+    box.textContent = "Menghasilkan evaluasi...";
+    document.getElementById("btn-gen-eval").disabled = true;
+
+    const tradesSummary = weekTrades.map(t => ({
+      pair: t.pair, tf: t.tf, bias: t.bias, lot: t.lot,
+      entry: t.entry, sl: t.sl, tp: t.tp, result: t.result, note: t.note
+    }));
+
+    const prompt = `Kamu adalah mentor trading yang jujur dan suportif. Berikut data trade XAUUSD seorang trader selama minggu ini (format JSON):
+
+${JSON.stringify(tradesSummary, null, 2)}
+
+Analisis pola dari trade-trade ini (disiplin risk management, konsistensi RR, kualitas alasan entry, hasil win/loss). Balas HANYA dengan objek JSON valid, tanpa markdown, tanpa teks lain, format persis:
+{"good": "1-3 kalimat tentang apa yang sudah benar minggu ini", "fix": "1-3 kalimat tentang apa yang perlu diperbaiki minggu ini"}`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const data = await response.json();
+      const textBlocks = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+      const clean = textBlocks.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      box.innerHTML = `<div style="margin-bottom:0.6rem;"><b>Yang sudah benar:</b><br>${parsed.good}</div><div><b>Perlu diperbaiki:</b><br>${parsed.fix}</div>`;
+    } catch (err) {
+      box.textContent = "Gagal membuat evaluasi. Coba lagi.";
+      console.error(err);
+    } finally {
+      document.getElementById("btn-gen-eval").disabled = false;
+    }
+  }
+
+  document.getElementById("btn-gen-eval").addEventListener("click", generateWeeklyEval);
+
+  boot();
+</script>
+
+</body>
+</html>
