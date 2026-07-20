@@ -1448,10 +1448,27 @@ const Model = (function(){
     return m+':'+String(s).padStart(2,'0')+'/km';
   }
 
+  // ---------------- AI (proxy lewat Supabase Edge Function "ai-analysis") ----------------
+  const AI = {
+    async ask(prompt) {
+      const { data, error } = await sbClient.functions.invoke("ai-analysis", { body: { prompt } });
+      if (error) {
+        let message = error.message || "Gagal memanggil layanan AI.";
+        try {
+          const body = await error.context?.json?.();
+          if (body?.error) message = body.error;
+        } catch (_) { /* pakai pesan default */ }
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data.text;
+    },
+  };
+
   return {
     sbClient, CONTRACT_SIZE, CHECKLIST_ITEMS,
     round2, usdValue, isToday, getMonday, isThisWeek, isThisMonth, formatRupiah,
-    Auth, Trades, Finance, Schedule, RunLog,
+    Auth, Trades, Finance, Schedule, RunLog, AI,
     parseDuration, fmtDuration, fmtPace,
   };
 })();
@@ -2338,18 +2355,11 @@ Analisis pola dari trade-trade ini (disiplin risk management, konsistensi RR, ku
 {"good": "1-3 kalimat tentang apa yang sudah benar minggu ini", "fix": "1-3 kalimat tentang apa yang perlu diperbaiki minggu ini"}`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
-      });
-      const data = await response.json();
-      const textBlocks = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-      const clean = textBlocks.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      const text = await Model.AI.ask(prompt);
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       View.Riwayat.setEvalAI(`<div style="margin-bottom:0.6rem;"><b>Yang sudah benar:</b><br>${parsed.good}</div><div><b>Perlu diperbaiki:</b><br>${parsed.fix}</div>`);
     } catch (err) {
-      View.Riwayat.setEvalAI("Gagal membuat evaluasi. Coba lagi.");
+      View.Riwayat.setEvalAI("Gagal membuat evaluasi: " + err.message);
       console.error(err);
     } finally {
       View.Riwayat.setEvalBusy(false);
@@ -2583,22 +2593,15 @@ Analisis pola dari data ini (tren pace, konsistensi jarak, efisiensi heart rate/
 {"progress": "1-3 kalimat tentang tren positif yang terlihat", "concern": "1-3 kalimat tentang hal yang perlu diwaspadai", "next_focus": "1-2 kalimat saran fokus latihan berikutnya"}`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
-      });
-      const data = await response.json();
-      const textBlocks = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-      const clean = textBlocks.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      const text = await Model.AI.ask(prompt);
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       View.Log.setAIResult(
         `<div style="margin-bottom:0.6rem;"><b>Tren positif:</b><br>${parsed.progress}</div>
          <div style="margin-bottom:0.6rem;"><b>Perlu diwaspadai:</b><br>${parsed.concern}</div>
          <div><b>Fokus berikutnya:</b><br>${parsed.next_focus}</div>`
       );
     } catch (err) {
-      View.Log.setAIResult("Gagal membuat analisis. Coba lagi.");
+      View.Log.setAIResult("Gagal membuat analisis: " + err.message);
       console.error(err);
     } finally {
       View.Log.setAIBusy(false);
